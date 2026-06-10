@@ -399,6 +399,38 @@ export class GeminiLiveVoice extends MastraVoice<
   }
 
   /**
+   * Returns the underlying WebSocket connection, or `undefined` when not connected.
+   * Use for external session-handoff scenarios (e.g. prewarm → phone bridge).
+   */
+  getWebSocket(): WebSocket | undefined {
+    return this.connectionManager.getWebSocket() as WebSocket | undefined;
+  }
+
+  /**
+   * Sends a `toolResponse` frame directly for tool calls handled outside `GeminiLiveVoice`.
+   * Pass `behavior: 'NON_BLOCKING'` to automatically inject `scheduling: 'SILENT'`.
+   */
+  sendToolResponse(
+    id: string,
+    name: string,
+    result: Record<string, unknown>,
+    behavior?: 'BLOCKING' | 'NON_BLOCKING',
+  ): void {
+    this.validateConnectionState();
+    const configToolDecl = this.options.tools?.find((t) => t.name === name);
+    const isNonBlocking = behavior === 'NON_BLOCKING' || configToolDecl?.behavior === 'NON_BLOCKING';
+    const responsePayload = isNonBlocking
+      ? { ...result, scheduling: 'SILENT' as const }
+      : result;
+    this.sendEvent('toolResponse', {
+      toolResponse: {
+        functionResponses: [{ id, name, response: responsePayload }],
+      },
+    });
+    this.log('Manual toolResponse sent', { id, name, isNonBlocking });
+  }
+
+  /**
    * Create and emit a standardized error
    * @private
    */
