@@ -2108,8 +2108,8 @@ export class GeminiLiveVoice extends MastraVoice<
   private buildToolDeclarations(
     configTools: GeminiToolConfig[] | undefined,
     registeredTools: ToolsInput | undefined,
-  ): Array<{ name: string; description?: string; parameters?: unknown }> {
-    const declarations: Array<{ name: string; description?: string; parameters?: unknown }> = [];
+  ): Array<{ name: string; description?: string; parameters?: unknown; behavior?: string }> {
+    const declarations: Array<{ name: string; description?: string; parameters?: unknown; behavior?: string }> = [];
 
     if (configTools && configTools.length > 0) {
       for (const tool of configTools) {
@@ -2117,6 +2117,7 @@ export class GeminiLiveVoice extends MastraVoice<
           name: tool.name,
           description: tool.description,
           parameters: tool.parameters,
+          ...(tool.behavior ? { behavior: tool.behavior } : {}),
         });
       }
     }
@@ -2141,6 +2142,7 @@ export class GeminiLiveVoice extends MastraVoice<
             name: toolName,
             description: tool.description || `Tool: ${toolName}`,
             parameters,
+            ...('behavior' in tool && tool.behavior ? { behavior: tool.behavior as string } : {}),
           });
         } catch (error) {
           this.log('Failed to process tool', { toolName, error });

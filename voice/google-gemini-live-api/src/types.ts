@@ -36,6 +36,8 @@ export type GeminiVoiceName = 'Puck' | 'Charon' | 'Kore' | 'Fenrir';
 export interface GeminiToolConfig {
   name: string;
   description: string;
+  /** Controls whether the model waits for the tool result before continuing speech. */
+  behavior?: 'BLOCKING' | 'NON_BLOCKING';
   parameters: {
     type: 'object';
     properties: Record<string, any>;
