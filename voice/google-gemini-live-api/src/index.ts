@@ -499,8 +499,8 @@ export class GeminiLiveVoice extends MastraVoice<
         headers = { headers: { Authorization: `Bearer ${accessToken}` } };
         this.log('Using Vertex AI authentication with OAuth token');
       } else {
-        // Live API endpoint - this is specifically for the Live API
-        wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`;
+        // Live API endpoint
+        wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent`;
         headers = {
           headers: {
             'x-goog-api-key': this.options.apiKey || '',
