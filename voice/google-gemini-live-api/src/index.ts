@@ -1631,6 +1631,14 @@ export class GeminiLiveVoice extends MastraVoice<
       // bare (their own enumerable properties are empty), losing the tool's data silently.
       const responsePayload = isPlainObject(result) ? result : { result };
 
+      // NON_BLOCKING tools use scheduling: 'SILENT' so the model absorbs the result without
+      // speaking an audible acknowledgement. Look up the config-tool declaration by name to check.
+      const configToolDecl = this.options.tools?.find((t) => t.name === toolName);
+      const isNonBlocking = configToolDecl?.behavior === 'NON_BLOCKING';
+      const responseWithScheduling = isNonBlocking
+        ? { ...responsePayload, scheduling: 'SILENT' as const }
+        : responsePayload;
+
       // Send tool result back to Gemini Live API
       const toolResultMessage = {
         toolResponse: {
@@ -1638,7 +1646,7 @@ export class GeminiLiveVoice extends MastraVoice<
             {
               id: toolId,
               name: toolName,
-              response: responsePayload,
+              response: responseWithScheduling,
             },
           ],
         },
@@ -1651,13 +1659,18 @@ export class GeminiLiveVoice extends MastraVoice<
       this.log('Tool execution failed', { toolName, error: errorMessage });
 
       // Send error result back to Gemini Live API
+      // Mirror the success path: NON_BLOCKING error responses also use scheduling: 'SILENT'.
+      const configToolDeclErr = this.options.tools?.find((t) => t.name === toolName);
+      const isNonBlockingErr = configToolDeclErr?.behavior === 'NON_BLOCKING';
       const errorResultMessage = {
         toolResponse: {
           functionResponses: [
             {
               id: toolId,
               name: toolName,
-              response: { error: errorMessage },
+              response: isNonBlockingErr
+                ? { error: errorMessage, scheduling: 'SILENT' as const }
+                : { error: errorMessage },
             },
           ],
         },
