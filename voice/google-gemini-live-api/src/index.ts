@@ -419,12 +419,14 @@ export class GeminiLiveVoice extends MastraVoice<
     this.validateConnectionState();
     const configToolDecl = this.options.tools?.find((t) => t.name === name);
     const isNonBlocking = behavior === 'NON_BLOCKING' || configToolDecl?.behavior === 'NON_BLOCKING';
-    const responsePayload = isNonBlocking
-      ? { ...result, scheduling: 'SILENT' as const }
-      : result;
     this.sendEvent('toolResponse', {
       toolResponse: {
-        functionResponses: [{ id, name, response: responsePayload }],
+        functionResponses: [{
+          id,
+          name,
+          response: result,
+          ...(isNonBlocking ? { scheduling: 'SILENT' as const } : {}),
+        }],
       },
     });
     this.log('Manual toolResponse sent', { id, name, isNonBlocking });
@@ -1667,18 +1669,17 @@ export class GeminiLiveVoice extends MastraVoice<
       // speaking an audible acknowledgement. Look up the config-tool declaration by name to check.
       const configToolDecl = this.options.tools?.find((t) => t.name === toolName);
       const isNonBlocking = configToolDecl?.behavior === 'NON_BLOCKING';
-      const responseWithScheduling = isNonBlocking
-        ? { ...responsePayload, scheduling: 'SILENT' as const }
-        : responsePayload;
 
       // Send tool result back to Gemini Live API
+      // scheduling goes at the function response level, NOT inside the response payload
       const toolResultMessage = {
         toolResponse: {
           functionResponses: [
             {
               id: toolId,
               name: toolName,
-              response: responseWithScheduling,
+              response: responsePayload,
+              ...(isNonBlocking ? { scheduling: 'SILENT' as const } : {}),
             },
           ],
         },
@@ -1700,9 +1701,8 @@ export class GeminiLiveVoice extends MastraVoice<
             {
               id: toolId,
               name: toolName,
-              response: isNonBlockingErr
-                ? { error: errorMessage, scheduling: 'SILENT' as const }
-                : { error: errorMessage },
+              response: { error: errorMessage },
+              ...(isNonBlockingErr ? { scheduling: 'SILENT' as const } : {}),
             },
           ],
         },
